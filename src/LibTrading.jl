@@ -28,7 +28,7 @@ export
         FIX_MSG_TYPE_MAX,
         FIX_MSG_TYPE_UNKNOWN
 
-import Base: TcpSocket
+import Base: TcpSocket, pointer, get!
 
 const FIX_SOCKETS = TcpSocket[]
 
@@ -70,6 +70,8 @@ immutable IOVec
     base::Ptr{Uint8}
     len::Csize_t
 end
+
+isdefined(Base, :read!) || const read! = read
 
 function io_recv(fd::Cint, buf::Ptr{Uint8}, n::Csize_t, flags::Cint)
     socket = FIX_SOCKETS[fd]
@@ -184,6 +186,13 @@ FixField(sym::Union(Symbol,String), val::FloatingPoint) =
     FixField(sym, float64(val))
 
 const FIX_FIELD_STRINGS = Dict{UTF8String,UTF8String}()
+
+if !applicable(pointer,"string")
+    pointer(s::ByteString) = pointer(s.data)
+end
+if !applicable(get!,Dict(),"key","default")
+    get!(d::Dict, v, k) = haskey(d,k) ? d[k] : (d[k] = v)
+end
 
 function FixField(sym::Union(Symbol,String), val::String)
     val = get!(FIX_FIELD_STRINGS, val, val) # transcode, pin, canonicalize
