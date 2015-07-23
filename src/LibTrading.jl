@@ -28,7 +28,7 @@ export
         FIX_MSG_TYPE_MAX,
         FIX_MSG_TYPE_UNKNOWN
 
-import Base: TcpSocket, pointer, get!
+import Base: TcpSocket, pointer, get!, send, recv
 
 const FIX_SOCKETS = TcpSocket[]
 
@@ -309,14 +309,14 @@ function time_update(session::FixSession)
     return nothing
 end
 
-function send(session::FixSession, msg::FixMessage, flags::Integer=zero(Cint))
+Base.send(session::FixSession, msg::FixMessage, flags::Integer=zero(Cint)) = begin
     r = ccall((:fix_session_send, :libtrading), Cint, (Ptr{Void}, Ptr{Void}, Cint),
               session.pointer, msg.pointer, flags)
     r >= 0 || error("fix_message_send failed")
     return nothing
 end
 
-function recv(session::FixSession, flags::Integer=zero(Cint))
+Base.recv(session::FixSession, flags::Integer=zero(Cint)) = begin
     p = ccall((:fix_session_recv, :libtrading), Ptr{Cint}, (Ptr{Void}, Cint),
               session.pointer, flags)
     p != C_NULL || error("no message received")
